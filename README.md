@@ -8,9 +8,11 @@ Embeddable public chat widget for PHP applications. Each tenant gets a shared pu
 
 - **Multi-tenant** — isolated chat rooms per site, each protected by its own shared secret
 - **HMAC-JWT auth** — tokens signed by the host site; single-use JTI prevents replay attacks
-- **Iframe embed** — one `<iframe>` tag, fully sandboxed from the host page
+- **Iframe embed** — one call to `iframeTag()`, fully sandboxed from the host page
+- **Cross-site sessions** — works in Safari and Chrome with third-party cookie blocking via `X-Session-Token` header
+- **Per-embed customisation** — height, width and theme colors are set independently on each `iframeTag()` call
 - **Moderation** — superusers can delete individual messages or clear all messages from a user in real time
-- **Configurable** — per-tenant cooldown, message TTL, history limit, and full theme control via CSS variables
+- **i18n** — all UI strings are overrideable per tenant; ships with Portuguese defaults
 - **No extra infrastructure** — MySQL only; sessions, rate limiting, and cleanup all run in the same database
 
 ## Requirements
@@ -48,6 +50,7 @@ Edit `config/database.php` with your credentials, then open `config/sites.php` a
     'message_ttl'        => 86400,
     'max_message_length' => 200,
     'history_limit'      => 50,
+    'widget_height'      => 500,
 ],
 ```
 
@@ -61,39 +64,97 @@ $chat = new ChatEmbed('my_site', 'your_secret_key');
 echo $chat->iframeTag(
     user:    ['user_id' => $user->id, 'display_name' => $user->name, 'is_super' => $user->isAdmin()],
     chatUrl: 'https://chat.example.com/public/embed.php',
-    height:  500,              // iframe height in pixels
 );
 ```
 
-**`height` and `width`** are configured per embed call — each page or widget can have a different size:
+## Sizing the widget
+
+Height and width are configured per `iframeTag()` call — each embed on the page can have a different size.
+
+**Priority (highest to lowest):**
+1. `height` parameter in `iframeTag()` — explicit client override
+2. `widget_height` in `config/sites.php` — server-side default for the tenant
+3. Built-in fallback: `500px`
+
+The widget reports its resolved height to the parent page via `postMessage`, so the iframe always resizes to the correct value even when the server default is used.
 
 ```php
-// Sidebar widget
-echo $chat->iframeTag(user: $user, chatUrl: $url, height: 400, width: '320px');
+// Uses widget_height from config/sites.php (server default)
+echo $chat->iframeTag(user: $user, chatUrl: $url);
 
-// Full-page embed
+// Client override — ignores server default
 echo $chat->iframeTag(user: $user, chatUrl: $url, height: 700);
+
+// Compact sidebar widget
+echo $chat->iframeTag(user: $user, chatUrl: $url, height: 400, width: '320px');
 ```
 
-**`theme`** overrides colors per embed — useful when the same tenant appears in multiple locations with different styles:
+## Customizing the appearance
+
+Theme colors can be set at two levels:
+
+**Server default** — applies to all embeds of this tenant unless overridden:
 
 ```php
-echo $chat->iframeTag(
-    user:    $user,
-    chatUrl: $url,
-    height:  500,
-    theme:   [
-        'primary'    => '#e11d48',  // rose accent
-        'bg'         => '#0f172a',  // dark background
+// config/sites.php
+'my_site' => [
+    'theme' => [
+        'primary'    => '#0ea5e9',
+        'primary_fg' => '#ffffff',
+        'bg'         => '#0f172a',
         'msg_bg'     => '#1e293b',
         'msg_fg'     => '#e2e8f0',
         'meta'       => '#64748b',
         'border'     => '#334155',
     ],
-);
+],
 ```
 
-Theme keys not provided fall back to the values in `config/sites.php`, which fall back to the built-in defaults. See [Customizing the appearance](#customizing-the-appearance) for all keys.
+**Per-embed override** — passed in `iframeTag()`, takes precedence over the server config. Useful when the same tenant appears in multiple locations with different styles:
+
+```php
+echo $chat->iframeTag(user: $user, chatUrl: $url, theme: ['primary' => '#e11d48']);
+echo $chat->iframeTag(user: $user, chatUrl: $url, theme: ['bg' => '#0f172a', 'primary' => '#7c3aed']);
+```
+
+Keys not provided fall back to `config/sites.php`, then to the built-in defaults:
+
+| Key | Default | Role |
+|---|---|---|
+| `primary` | `#4f46e5` | Accent — send button and own message bubbles |
+| `primary_fg` | `#ffffff` | Text on primary-colored elements |
+| `bg` | `#ffffff` | Widget background |
+| `msg_bg` | `#f0f0f0` | Other users' bubble background |
+| `msg_fg` | `#222222` | Other users' bubble text and input text |
+| `meta` | `#888888` | Sender names, timestamps, and cooldown text |
+| `border` | `#e5e7eb` | Footer and input borders |
+
+> **Live preview** — see [Development preview](#development-preview) for setup instructions, then open `examples/test_embed.php` in a browser to pick colors interactively before committing them to config.
+
+## Translating the widget
+
+All user-facing strings are defined in `config/sites.php` under the `strings` key. Override only the keys you need — unset keys use the Portuguese defaults.
+
+```php
+'my_site' => [
+    'strings' => [
+        'lang'             => 'en',
+        'placeholder'      => 'Type a message...',
+        'send'             => 'Send',
+        'sessionExpired'   => 'Session expired. Please reload the page.',
+        'cooldown'         => 'Please wait {n}s…',
+        'errorSend'        => 'Failed to send message.',
+        'errorModerate'    => 'Moderation action failed.',
+        'errorConnection'  => 'Connection error.',
+        'confirmDelete'    => 'Delete this message?',
+        'confirmDeleteAll' => 'Delete ALL messages from this user?',
+        'deleteMsg'        => 'Delete',
+        'deleteUser'       => 'Delete all from user',
+    ],
+],
+```
+
+The `lang` value is set as the `<html lang>` attribute of the widget iframe. The `{n}` placeholder in `cooldown` is replaced at runtime with the remaining seconds.
 
 ## Scheduled cleanup
 
@@ -151,65 +212,6 @@ https://yourserver.com/agorachat/public/embed.php
 
 Leave `CHAT_URL` as an empty string (`''`) to auto-detect the URL from the current request — useful when the example file is served from the same server as AgoraChat.
 
-## Customizing the appearance
-
-Theme colors are configured per tenant in `config/sites.php` under the `theme` key. Every value is a CSS hex color (`#rgb` or `#rrggbb`).
-
-```php
-'my_site' => [
-    // ...
-    'theme' => [
-        'primary'    => '#0ea5e9', // send button and own message bubbles
-        'primary_fg' => '#ffffff', // text on primary-colored elements
-        'bg'         => '#0f172a', // widget background
-        'msg_bg'     => '#1e293b', // other users' bubble background
-        'msg_fg'     => '#e2e8f0', // other users' bubble text and input text
-        'meta'       => '#64748b', // sender names and cooldown text
-        'border'     => '#334155', // footer and input borders
-    ],
-],
-```
-
-Omitted keys fall back to the defaults below:
-
-| Key | Default | Role |
-|---|---|---|
-| `primary` | `#4f46e5` | Accent — send button and own message bubbles |
-| `primary_fg` | `#ffffff` | Text on primary-colored elements |
-| `bg` | `#ffffff` | Widget background |
-| `msg_bg` | `#f0f0f0` | Other users' bubble background |
-| `msg_fg` | `#222222` | Other users' bubble text and input text |
-| `meta` | `#888888` | Sender names and cooldown text |
-| `border` | `#e5e7eb` | Footer and input borders |
-
-> **Live preview** — see [Development preview](#development-preview) for setup instructions, then open `examples/test_embed.php` in a browser to pick colors interactively before committing them to config.
-
-## Translating the widget
-
-All user-facing strings are defined in `config/sites.php` under the `strings` key. Override only the keys you need — unset keys use the Portuguese defaults.
-
-```php
-'my_site' => [
-    // ...
-    'strings' => [
-        'lang'             => 'en',
-        'placeholder'      => 'Type a message...',
-        'send'             => 'Send',
-        'sessionExpired'   => 'Session expired. Please reload the page.',
-        'cooldown'         => 'Please wait {n}s…',
-        'errorSend'        => 'Failed to send message.',
-        'errorModerate'    => 'Moderation action failed.',
-        'errorConnection'  => 'Connection error.',
-        'confirmDelete'    => 'Delete this message?',
-        'confirmDeleteAll' => 'Delete ALL messages from this user?',
-        'deleteMsg'        => 'Delete',
-        'deleteUser'       => 'Delete all from user',
-    ],
-],
-```
-
-The `lang` value is set as the `<html lang>` attribute of the widget iframe. The `{n}` placeholder in `cooldown` is replaced at runtime with the remaining seconds.
-
 ## Configuration reference
 
 | Key | Default | Description |
@@ -220,6 +222,7 @@ The `lang` value is set as the `<html lang>` attribute of the widget iframe. The
 | `message_ttl` | `0` | Seconds after which messages are deleted. `0` keeps them forever. |
 | `max_message_length` | `200` | Maximum characters per message. |
 | `history_limit` | `50` | Number of messages loaded when the widget opens. |
+| `widget_height` | `500` | Default iframe height in pixels. Overrideable per embed via the `height` parameter in `iframeTag()`. Clamped to 100–2000. |
 | `theme` | see above | Hex color overrides for the widget. |
 | `strings` | see above | UI string overrides for translation. |
 

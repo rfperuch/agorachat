@@ -30,5 +30,6 @@ return [
     //     'message_ttl'        => 0,
     //     'max_message_length' => 500,
     //     'history_limit'      => 100,
+    //     'widget_height'      => 500,
     // ],
 ];

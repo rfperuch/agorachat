@@ -78,7 +78,6 @@ class ChatEmbed
         $defaults = [
             'width'          => $width,
             'height'         => $initialHeight,
-            'frameborder'    => '0',
             'style'          => 'border:none;display:block',
             'allow'          => 'clipboard-write',
             'referrerpolicy' => 'strict-origin-when-cross-origin',

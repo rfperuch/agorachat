@@ -142,8 +142,9 @@ function renderChat(string $siteId, array $cfg, string $csrfToken, string $sessi
     $historyLimit = (int) ($cfg['history_limit'] ?? 50);
     $cooldown     = (int) ($cfg['message_cooldown'] ?? 0);
     $maxLen       = (int) ($cfg['max_message_length'] ?? 200);
-    // SDK can override widget_height via ?h=N; sites.php value is the fallback
-    $widgetHeight = max(100, (int) ($_GET['h'] ?? $cfg['widget_height'] ?? 500));
+    // SDK can override widget_height via ?h=N; sites.php value is the fallback.
+    // Clamped to [100, 2000] to prevent absurd iframe dimensions.
+    $widgetHeight = min(2000, max(100, (int) ($_GET['h'] ?? $cfg['widget_height'] ?? 500)));
     $theme        = buildTheme($cfg['theme'] ?? []);  // merges config + URL overrides
     $strings      = buildStrings($cfg);
     $lang         = htmlspecialchars($strings['lang'], ENT_QUOTES);
