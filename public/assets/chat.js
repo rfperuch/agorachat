@@ -52,14 +52,31 @@
     return $messages.scrollHeight - $messages.scrollTop - $messages.clientHeight < 80;
   }
 
+  const AVATAR_COLORS = [
+    '#6366f1', '#0ea5e9', '#10b981', '#f59e0b',
+    '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6',
+  ];
+
+  function avatarColor(userId) {
+    return AVATAR_COLORS[Math.abs(userId) % AVATAR_COLORS.length];
+  }
+
+  function formatTime(ts) {
+    return new Date(ts * 1000).toLocaleTimeString(s.lang || 'pt-BR', {
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+  }
+
   // ── Render a single message ───────────────────────────────────────────────
 
   function renderMessage(msg) {
-    const isOwn   = msg.user_id === cfg.userId;
+    const isOwn      = msg.user_id === cfg.userId;
     const safeAvatar = msg.avatar ? safeAvatarUrl(msg.avatar) : null;
     const avatarHtml = safeAvatar
       ? `<img src="${escHtml(safeAvatar)}" alt="">`
       : escHtml(initials(msg.sender));
+    const color = avatarColor(msg.user_id);
+    const time  = formatTime(msg.ts);
 
     const modActions = cfg.isSuper
       ? `<div class="msg-actions">
@@ -72,9 +89,12 @@
     div.className = 'msg' + (isOwn ? ' own' : '');
     div.dataset.id = msg.id;
     div.innerHTML = `
-      <div class="msg-avatar">${avatarHtml}</div>
+      <div class="msg-avatar" style="--ava:${color}">${avatarHtml}</div>
       <div class="msg-body">
-        <div class="msg-name">${escHtml(msg.sender)}</div>
+        <div class="msg-meta">
+          ${isOwn ? '' : `<span class="msg-name">${escHtml(msg.sender)}</span>`}
+          <span class="msg-time">${escHtml(time)}</span>
+        </div>
         <div class="msg-bubble">${escHtml(msg.content)}</div>
         ${modActions}
       </div>`;
