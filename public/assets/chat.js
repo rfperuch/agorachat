@@ -102,7 +102,10 @@
 
   async function loadHistory() {
     try {
-      const res = await fetch(`${BASE}/history.php`, { credentials: 'include' });
+      const res = await fetch(`${BASE}/history.php`, {
+        credentials: 'include',
+        headers: { 'X-Session-Token': cfg.sessionToken },
+      });
 
       if (res.status === 401) {
         $messages.innerHTML = `<p style="padding:12px;color:#888">${escHtml(s.sessionExpired)}</p>`;
@@ -123,7 +126,10 @@
   async function poll() {
     try {
       const url = `${BASE}/poll.php?after_id=${lastMessageId}&after_deletion_id=${lastDeletionId}`;
-      const res = await fetch(url, { credentials: 'include' });
+      const res = await fetch(url, {
+        credentials: 'include',
+        headers: { 'X-Session-Token': cfg.sessionToken },
+      });
 
       if (res.status === 401) {
         $messages.innerHTML = `<p style="padding:12px;color:#888">${escHtml(s.sessionExpired)}</p>`;
@@ -157,7 +163,7 @@
       const res  = await fetch(`${BASE}/send.php`, {
         method:      'POST',
         credentials: 'include',
-        headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'X-Session-Token': cfg.sessionToken },
         body:        JSON.stringify({ content }),
       });
       const data = await res.json();
@@ -191,7 +197,7 @@
       const res  = await fetch(`${BASE}/moderate.php`, {
         method:      'DELETE',
         credentials: 'include',
-        headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'X-Session-Token': cfg.sessionToken },
         body:        JSON.stringify(body),
       });
       const data = await res.json();

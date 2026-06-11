@@ -32,9 +32,10 @@ if (Session::isAuthenticated() && Session::siteId() === $siteId && $siteConfig !
             exit;
         }
         Headers::send($siteConfig['allowed_origins']);
-        $csrfToken = CsrfGuard::token(); // read before closing session
+        $csrfToken    = CsrfGuard::token();
+        $sessionToken = session_id();
         session_write_close();
-        renderChat($siteId, $siteConfig, $csrfToken);
+        renderChat($siteId, $siteConfig, $csrfToken, $sessionToken);
         exit;
     }
 
@@ -87,10 +88,11 @@ $userId   = $userRepo->upsert(
 );
 
 Session::create($userId, $siteId, (bool) ($payload['super'] ?? false), $payload['sub']);
-$csrfToken = CsrfGuard::token(); // generate and store in session BEFORE closing
+$csrfToken    = CsrfGuard::token();
+$sessionToken = session_id();
 session_write_close();
 
-renderChat($siteId, $siteConfig, $csrfToken);
+renderChat($siteId, $siteConfig, $csrfToken, $sessionToken);
 
 // ---------------------------------------------------------------------------
 
@@ -135,7 +137,7 @@ function buildTheme(array $cfg): array
     return $out;
 }
 
-function renderChat(string $siteId, array $cfg, string $csrfToken): void
+function renderChat(string $siteId, array $cfg, string $csrfToken, string $sessionToken): void
 {
     $historyLimit = (int) ($cfg['history_limit'] ?? 50);
     $cooldown     = (int) ($cfg['message_cooldown'] ?? 0);
@@ -157,6 +159,7 @@ function renderChat(string $siteId, array $cfg, string $csrfToken): void
     'maxLen'       => $maxLen,
     'isSuper'      => Session::isSuper(),
     'userId'       => Session::userId(),
+    'sessionToken' => $sessionToken,
     'strings'      => $strings,
 ]), ENT_QUOTES) ?>">
 <title>AgoraChat</title>

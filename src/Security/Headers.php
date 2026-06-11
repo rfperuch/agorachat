@@ -11,6 +11,7 @@ class Headers
             $frameAncestors .= ' ' . $origin;
         }
 
+        header('Content-Type: text/html; charset=utf-8');
         header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; frame-ancestors {$frameAncestors}");
         header('X-Content-Type-Options: nosniff');
         header('Referrer-Policy: strict-origin-when-cross-origin');

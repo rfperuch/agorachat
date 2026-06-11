@@ -21,15 +21,36 @@ class Session
     {
         if (session_status() === PHP_SESSION_NONE) {
             self::applyCookieParams();
+            self::resumeFromHeader();
             session_start();
-            session_write_close(); // flush + release MySQL row lock immediately
+            session_write_close();
+        }
+    }
+
+    /**
+     * Allows cross-site iframes to resume a session via the X-Session-Token header
+     * instead of a cookie. Browsers block third-party cookies in cross-site iframes
+     * (Safari ITP, Chrome Privacy Sandbox), so the session ID is embedded in the
+     * page HTML by embed.php and sent as a header by chat.js on every API call.
+     */
+    private static function resumeFromHeader(): void
+    {
+        $token = $_SERVER['HTTP_X_SESSION_TOKEN'] ?? '';
+        if ($token !== '' && preg_match('/^[a-zA-Z0-9\-,]{20,128}$/', $token)) {
+            session_id($token);
         }
     }
 
     private static function applyCookieParams(): void
     {
         $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                || (($_SERVER['SERVER_PORT'] ?? 80) == 443);
+                || (($_SERVER['SERVER_PORT'] ?? 80) == 443)
+                || (strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+
+        // Distinct name avoids collision with host-site PHPSESSID (IPB, WordPress…)
+        // even when AgoraChat and the host site share the same domain.
+        session_name('agorachat_session');
+
         session_set_cookie_params([
             'lifetime' => 0,
             'path'     => '/',
@@ -37,7 +58,7 @@ class Session
             'httponly' => true,
             'samesite' => $isHttps ? 'None' : 'Lax',
         ]);
-        // Replace file-based session handler with MySQL — no OS file locks
+
         session_set_save_handler(new MySqlSessionHandler(db()), true);
     }
 
