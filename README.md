@@ -59,14 +59,41 @@ Copy `sdk/ChatEmbed.php` into your host application:
 $chat = new ChatEmbed('my_site', 'your_secret_key');
 
 echo $chat->iframeTag(
-    [
-        'user_id'      => $user->id,
-        'display_name' => $user->name,
-        'is_super'     => $user->isAdmin(),
-    ],
-    'https://chat.example.com/public/embed.php'
+    user:    ['user_id' => $user->id, 'display_name' => $user->name, 'is_super' => $user->isAdmin()],
+    chatUrl: 'https://chat.example.com/public/embed.php',
+    height:  500,              // iframe height in pixels
 );
 ```
+
+**`height` and `width`** are configured per embed call — each page or widget can have a different size:
+
+```php
+// Sidebar widget
+echo $chat->iframeTag(user: $user, chatUrl: $url, height: 400, width: '320px');
+
+// Full-page embed
+echo $chat->iframeTag(user: $user, chatUrl: $url, height: 700);
+```
+
+**`theme`** overrides colors per embed — useful when the same tenant appears in multiple locations with different styles:
+
+```php
+echo $chat->iframeTag(
+    user:    $user,
+    chatUrl: $url,
+    height:  500,
+    theme:   [
+        'primary'    => '#e11d48',  // rose accent
+        'bg'         => '#0f172a',  // dark background
+        'msg_bg'     => '#1e293b',
+        'msg_fg'     => '#e2e8f0',
+        'meta'       => '#64748b',
+        'border'     => '#334155',
+    ],
+);
+```
+
+Theme keys not provided fall back to the values in `config/sites.php`, which fall back to the built-in defaults. See [Customizing the appearance](#customizing-the-appearance) for all keys.
 
 ## Scheduled cleanup
 

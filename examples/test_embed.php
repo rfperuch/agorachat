@@ -46,11 +46,8 @@ $themeMeta      = validHex($_GET['meta']       ?? '', '#888888');
 $themeBorder    = validHex($_GET['border']     ?? '', '#e5e7eb');
 
 $chat  = new ChatEmbed(SITE_ID, SECRET_KEY);
-$token = $chat->generateToken(['user_id' => $userId] + $currentUser);
 
-$src = $chatUrl . '?' . http_build_query([
-    'site'       => SITE_ID,
-    'token'      => $token,
+$theme = [
     'primary'    => $themePrimary,
     'primary_fg' => $themePrimaryFg,
     'bg'         => $themeBg,
@@ -58,7 +55,7 @@ $src = $chatUrl . '?' . http_build_query([
     'msg_fg'     => $themeMsgFg,
     'meta'       => $themeMeta,
     'border'     => $themeBorder,
-]);
+];
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -178,11 +175,13 @@ $src = $chatUrl . '?' . http_build_query([
 
   <div>
     <div class="chat-frame">
-      <iframe src="<?= htmlspecialchars($src) ?>"
-              width="400" height="580"
-              frameborder="0"
-              referrerpolicy="strict-origin-when-cross-origin">
-      </iframe>
+      <?= $chat->iframeTag(
+          ['user_id' => $userId] + $currentUser,
+          $chatUrl,
+          height: 580,
+          width:  '400',
+          theme:  $theme,
+      ) ?>
     </div>
   </div>
 </div>

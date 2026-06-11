@@ -41,11 +41,13 @@ $isSuper = $member->isAdmin();
 $chat = new ChatEmbed( AGORACHAT_SITE_ID, AGORACHAT_SECRET_KEY );
 
 echo $chat->iframeTag(
-    [
+    user:    [
         'user_id'      => $member->member_id,
         'display_name' => $member->name,
         'avatar_url'   => $avatarUrl,
         'is_super'     => $isSuper,
     ],
-    AGORACHAT_URL
+    chatUrl: AGORACHAT_URL,
+    height:  500,
+    // theme: ['primary' => '#your-color'],  // optional per-embed theme override
 );

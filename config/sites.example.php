@@ -10,6 +10,7 @@ return [
         'message_ttl'        => 86400,  // seconds before messages are deleted (0 = never)
         'max_message_length' => 200,    // max chars per message
         'history_limit'      => 50,     // messages to load on chat open
+        'widget_height'      => 500,    // default iframe height in px (overrideable per embed via SDK)
         'theme'              => [
             'primary'    => '#4f46e5', // accent: buttons, own message bubbles
             'primary_fg' => '#ffffff', // text on primary-colored elements
