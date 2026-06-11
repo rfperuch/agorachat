@@ -38,27 +38,28 @@ if (mb_strlen($content) > $maxLen) {
     json_error("Message exceeds {$maxLen} characters");
 }
 
-// Per-user cooldown check
+// Atomic cooldown: a single UPDATE only succeeds when the cooldown has elapsed,
+// eliminating the race condition of a separate SELECT + UPDATE pair.
 $cooldown = (int) ($cfg['message_cooldown'] ?? 0);
 if ($cooldown > 0) {
-    $stmt = db()->prepare('SELECT last_message_at FROM chat_users WHERE id = ?');
-    $stmt->execute([$userId]);
-    $lastAt = $stmt->fetchColumn();
+    $stmt = db()->prepare(
+        'UPDATE chat_users SET last_message_at = NOW()
+         WHERE id = ?
+           AND (last_message_at IS NULL
+                OR TIMESTAMPDIFF(SECOND, last_message_at, NOW()) >= ?)'
+    );
+    $stmt->execute([$userId, $cooldown]);
 
-    if ($lastAt) {
-        $wait = $cooldown - (time() - strtotime($lastAt));
-        if ($wait > 0) {
-            json_response(['wait' => $wait], 429);
-        }
+    if ($stmt->rowCount() === 0) {
+        $row = db()->prepare('SELECT last_message_at FROM chat_users WHERE id = ?');
+        $row->execute([$userId]);
+        $lastAt = $row->fetchColumn();
+        $wait   = $lastAt ? max(1, $cooldown - (int)(time() - strtotime($lastAt))) : 1;
+        json_response(['wait' => $wait], 429);
     }
 }
 
 $msgRepo   = new MessageRepository(db());
 $messageId = $msgRepo->insert($siteId, $userId, $content);
-
-if ($cooldown > 0) {
-    db()->prepare('UPDATE chat_users SET last_message_at = NOW() WHERE id = ?')
-        ->execute([$userId]);
-}
 
 json_response(['id' => $messageId], 201);

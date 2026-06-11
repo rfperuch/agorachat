@@ -83,6 +83,6 @@ class TokenValidator
 
     private function b64urlDecode(string $data): string
     {
-        return base64_decode(strtr($data, '-_', '+/'));
+        return base64_decode(strtr($data, '-_', '+/'), true) ?: '';
     }
 }

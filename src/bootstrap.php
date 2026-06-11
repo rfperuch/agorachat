@@ -63,7 +63,7 @@ function format_messages(array $rows): array
     return array_map(fn($r) => [
         'id'      => (int) $r['id'],
         'content' => $r['content'],
-        'ts'      => strtotime($r['created_at']),
+        'ts'      => (int) strtotime($r['created_at']),
         'user_id' => (int) $r['user_id'],
         'sender'  => $r['display_name'],
         'avatar'  => $r['avatar_url'],
