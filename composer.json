@@ -1,0 +1,22 @@
+{
+    "name": "agorachat/agorachat",
+    "description": "Embeddable public chat widget with multi-tenant HMAC-JWT auth",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "classmap": [
+            "src/",
+            "sdk/"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    }
+}

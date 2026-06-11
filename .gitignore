@@ -1,0 +1,14 @@
+# Secrets — copy the .example files and fill in real values
+config/database.php
+config/sites.php
+
+# PHP dependencies
+/vendor/
+.phpunit.result.cache
+
+# Logs
+logs/*.log
+
+# Editor / tool internals
+.DS_Store
+.claude/
