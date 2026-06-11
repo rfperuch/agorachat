@@ -85,6 +85,45 @@ vendor/bin/phpunit
 
 The test suite is pure unit tests — no database required.
 
+## Development preview
+
+`examples/test_embed.php` simulates a host site embedding the widget. Open it in a browser to switch between test users, verify authentication, and pick theme colors interactively before committing them to config.
+
+Configure the three constants at the top of the file:
+
+```php
+const SITE_ID    = 'my_site';
+const SECRET_KEY = 'your-64-char-hex-key';
+const CHAT_URL   = 'https://yourserver.com/agorachat/public/embed.php';
+```
+
+**`SITE_ID`** — must match a tenant key defined in `config/sites.php` exactly:
+
+```php
+// config/sites.php
+return [
+    'my_site' => [ // ← this value is the SITE_ID
+        'secret_key' => '...',
+        ...
+    ],
+];
+```
+
+**`SECRET_KEY`** — copy the `secret_key` value from that same tenant entry. The example generates signed JWT tokens with this secret; the AgoraChat server uses the same value to verify them. They must be identical or authentication will fail with 403.
+
+```php
+'secret_key' => '3b00d8dc9973398cca327a9be99605755746fc0ec3a6c3a61884ef76c0fa896f', // ← paste here
+```
+
+**`CHAT_URL`** — full URL to `public/embed.php` on the AgoraChat server. The path always ends with `/public/embed.php` regardless of where the project is installed:
+
+```
+https://yourserver.com/agorachat/public/embed.php
+                        └─ installation path ──┘└─ always this file ─┘
+```
+
+Leave `CHAT_URL` as an empty string (`''`) to auto-detect the URL from the current request — useful when the example file is served from the same server as AgoraChat.
+
 ## Customizing the appearance
 
 Theme colors are configured per tenant in `config/sites.php` under the `theme` key. Every value is a CSS hex color (`#rgb` or `#rrggbb`).
@@ -116,7 +155,7 @@ Omitted keys fall back to the defaults below:
 | `meta` | `#888888` | Sender names and cooldown text |
 | `border` | `#e5e7eb` | Footer and input borders |
 
-> **Live preview** — open `examples/test_embed.php` in a browser to pick colors interactively before committing them to config.
+> **Live preview** — see [Development preview](#development-preview) for setup instructions, then open `examples/test_embed.php` in a browser to pick colors interactively before committing them to config.
 
 ## Translating the widget
 
