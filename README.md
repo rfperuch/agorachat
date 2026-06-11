@@ -15,7 +15,7 @@ Embeddable public chat widget for PHP applications. Each tenant gets a shared pu
 
 ## Requirements
 
-- PHP 8.1+
+- PHP 8.2+
 - MySQL 5.7+ / MariaDB 10.3+
 - Apache or Nginx
 
