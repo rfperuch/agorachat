@@ -22,11 +22,11 @@ final class ChatEmbedTest extends TestCase
 
     // ── Output structure ──────────────────────────────────────────────────────
 
-    public function testOutputContainsIframeAndListenerScript(): void
+    public function testOutputContainsIframe(): void
     {
         $out = $this->chat->iframeTag($this->user, $this->url);
         $this->assertStringContainsString('<iframe ', $out);
-        $this->assertStringContainsString('<script>', $out);
+        $this->assertStringNotContainsString('<script>', $out);
     }
 
     public function testSiteIdIsInSrc(): void
@@ -112,37 +112,12 @@ final class ChatEmbedTest extends TestCase
         $this->assertStringNotContainsString('__evil__', $out);
     }
 
-    // ── postMessage listener ──────────────────────────────────────────────────
-
-    public function testListenerContainsResizeEventType(): void
+    public function testTwoCallsProduceDifferentTokens(): void
     {
-        $out = $this->chat->iframeTag($this->user, $this->url);
-        $this->assertStringContainsString('agorachat:resize', $out);
-    }
-
-    public function testListenerChecksContentWindow(): void
-    {
-        $out = $this->chat->iframeTag($this->user, $this->url);
-        $this->assertStringContainsString('contentWindow', $out);
-    }
-
-    public function testIframeIdMatchesListenerTargetId(): void
-    {
-        $out = $this->chat->iframeTag($this->user, $this->url);
-        preg_match('/id="(agora-[a-f0-9]+)"/', $out, $m);
-        $id = $m[1] ?? '';
-        $this->assertNotEmpty($id);
-        // The script must reference the same ID
-        $this->assertStringContainsString(json_encode($id), $out);
-    }
-
-    public function testTwoCallsProduceDifferentIframeIds(): void
-    {
+        // JTI is random — two calls must produce different src URLs
         $out1 = $this->chat->iframeTag($this->user, $this->url);
         $out2 = $this->chat->iframeTag($this->user, $this->url);
-        preg_match('/id="(agora-[a-f0-9]+)"/', $out1, $m1);
-        preg_match('/id="(agora-[a-f0-9]+)"/', $out2, $m2);
-        $this->assertNotSame($m1[1] ?? 'a', $m2[1] ?? 'b');
+        $this->assertNotSame($out1, $out2);
     }
 
     // ── Extra attrs ───────────────────────────────────────────────────────────

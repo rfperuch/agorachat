@@ -74,8 +74,6 @@ Height and width are configured per `iframeTag()` call — each embed on the pag
 1. `height` parameter in `iframeTag()` — explicit value
 2. Built-in fallback: `500px`
 
-The widget reports its height to the parent page via `postMessage`, so the iframe always resizes to the correct value after load.
-
 ```php
 // Uses built-in default (500px)
 echo $chat->iframeTag(user: $user, chatUrl: $url);

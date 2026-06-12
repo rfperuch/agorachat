@@ -140,8 +140,6 @@ function renderChat(string $siteId, array $cfg, string $csrfToken, string $sessi
     $historyLimit = (int) ($cfg['history_limit'] ?? 50);
     $cooldown     = (int) ($cfg['message_cooldown'] ?? 0);
     $maxLen       = (int) ($cfg['max_message_length'] ?? 200);
-    // Height is set exclusively by the SDK via ?h=N; clamped to [100, 2000].
-    $widgetHeight = min(2000, max(100, (int) ($_GET['h'] ?? 500)));
     $theme        = buildTheme();
     $strings      = buildStrings($cfg);
     $lang         = htmlspecialchars($strings['lang'], ENT_QUOTES);
@@ -160,7 +158,6 @@ function renderChat(string $siteId, array $cfg, string $csrfToken, string $sessi
     'isSuper'      => Session::isSuper(),
     'userId'       => Session::userId(),
     'sessionToken' => $sessionToken,
-    'widgetHeight' => $widgetHeight,
     'strings'      => $strings,
 ]), ENT_QUOTES) ?>">
 <title>AgoraChat</title>

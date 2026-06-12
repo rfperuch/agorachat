@@ -323,12 +323,6 @@
   // ── Init ──────────────────────────────────────────────────────────────────
 
   loadHistory().then(ok => {
-    // Inform the parent page of the configured height so it can resize the iframe.
-    // The SDK listener picks this up and applies it.
-    window.parent.postMessage(
-      { type: 'agorachat:resize', height: cfg.widgetHeight },
-      '*'
-    );
     if (ok) startPolling();
   });
 })();

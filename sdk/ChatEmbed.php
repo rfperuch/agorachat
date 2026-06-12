@@ -30,11 +30,7 @@ class ChatEmbed
     ) {}
 
     /**
-     * Generates the iframe HTML tag plus a postMessage listener script.
-     *
-     * The listener script resizes the iframe once the widget reports its
-     * height via postMessage, keeping the iframe attribute and the rendered
-     * widget in sync.
+     * Generates the iframe HTML tag.
      *
      * @param array  $user    User data: user_id (required), display_name, avatar_url, is_super
      * @param string $chatUrl Full URL to embed.php on the AgoraChat server
@@ -54,7 +50,6 @@ class ChatEmbed
     ): string {
         $params = ['site' => $this->siteId, 'token' => $this->generateToken($user)];
 
-        // Height is forwarded as ?h=N and echoed back in the widget config for postMessage.
         if ($height > 0) {
             $params['h'] = $height;
         }
@@ -66,38 +61,24 @@ class ChatEmbed
             }
         }
 
-        $src      = $chatUrl . '?' . http_build_query($params);
-        $iframeId = 'agora-' . bin2hex(random_bytes(4));
-
-        // Initial height: use the explicit value; fall back to DEFAULT_HEIGHT so the
-        // page doesn't jump from 0 before the postMessage fires.
-        $initialHeight = $height > 0 ? $height : self::DEFAULT_HEIGHT;
+        $src    = $chatUrl . '?' . http_build_query($params);
+        $height = $height > 0 ? $height : self::DEFAULT_HEIGHT;
 
         $defaults = [
             'width'          => $width,
-            'height'         => $initialHeight,
+            'height'         => $height,
             'style'          => 'border:none;display:block',
             'allow'          => 'clipboard-write',
             'referrerpolicy' => 'strict-origin-when-cross-origin',
         ];
 
-        $attrStr = ' id="' . htmlspecialchars($iframeId, ENT_QUOTES) . '"';
+        $attrStr = '';
         foreach (array_merge($defaults, $attrs) as $k => $v) {
             $attrStr .= ' ' . htmlspecialchars($k, ENT_QUOTES)
                       . '="' . htmlspecialchars((string) $v, ENT_QUOTES) . '"';
         }
 
-        $iframe = '<iframe src="' . htmlspecialchars($src, ENT_QUOTES) . '"' . $attrStr . '></iframe>';
-
-        // Inline listener: when the widget posts agorachat:resize, resize the iframe.
-        // Checks e.source to ensure the message comes from *this* iframe only.
-        $id     = json_encode($iframeId);
-        $script = '<script>(function(){var f=document.getElementById(' . $id . ');'
-                . 'window.addEventListener("message",function(e){'
-                . 'if(f&&e.data&&e.data.type==="agorachat:resize"&&e.source===f.contentWindow){'
-                . 'f.style.height=e.data.height+"px";}});})();</script>';
-
-        return $iframe . "\n" . $script;
+        return '<iframe src="' . htmlspecialchars($src, ENT_QUOTES) . '"' . $attrStr . '></iframe>';
     }
 
     public function generateToken(array $user): string
