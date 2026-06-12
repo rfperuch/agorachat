@@ -122,10 +122,13 @@
     const color = avatarColor(msg.user_id);
     const time  = formatTime(msg.ts);
 
+    // span+role instead of <button>: dynamically-inserted focusable elements
+    // trigger Safari's cross-origin accessibility-tree check inside third-party
+    // iframes, which logs a security warning during the parent's init window.
     const modActions = cfg.isSuper
       ? `<div class="msg-actions">
-           <button data-action="del-msg" data-id="${msg.id}">${escHtml(s.deleteMsg)}</button>
-           <button data-action="del-user" data-uid="${msg.user_id}">${escHtml(s.deleteUser)}</button>
+           <span role="button" tabindex="0" data-action="del-msg" data-id="${msg.id}">${escHtml(s.deleteMsg)}</span>
+           <span role="button" tabindex="0" data-action="del-user" data-uid="${msg.user_id}">${escHtml(s.deleteUser)}</span>
          </div>`
       : '';
 
@@ -175,7 +178,7 @@
   async function loadHistory() {
     try {
       const res = await fetch(`${BASE}/history.php`, {
-        credentials: 'include',
+        credentials: 'omit',
         headers: { 'X-Session-Token': cfg.sessionToken },
       });
 
@@ -196,7 +199,7 @@
     try {
       const url = `${BASE}/poll.php?after_id=${lastMessageId}&after_deletion_id=${lastDeletionId}`;
       const res = await fetch(url, {
-        credentials: 'include',
+        credentials: 'omit',
         headers: { 'X-Session-Token': cfg.sessionToken },
       });
 
@@ -229,10 +232,10 @@
     let keepDisabled = false; // true when a cooldown takes over button ownership
     try {
       const res  = await fetch(`${BASE}/send.php`, {
-        method:      'POST',
-        credentials: 'include',
-        headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'X-Session-Token': cfg.sessionToken },
-        body:        JSON.stringify({ content }),
+        method:       'POST',
+        credentials:  'omit',
+        headers:      { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'X-Session-Token': cfg.sessionToken },
+        body:         JSON.stringify({ content }),
       });
       const data = await res.json();
 
@@ -266,10 +269,10 @@
   async function moderate(body) {
     try {
       const res  = await fetch(`${BASE}/moderate.php`, {
-        method:      'DELETE',
-        credentials: 'include',
-        headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'X-Session-Token': cfg.sessionToken },
-        body:        JSON.stringify(body),
+        method:       'DELETE',
+        credentials:  'omit',
+        headers:      { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'X-Session-Token': cfg.sessionToken },
+        body:         JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) showInlineError(data.error ?? s.errorModerate);
@@ -309,15 +312,26 @@
     }
   });
 
-  $messages.addEventListener('click', e => {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
+  function handleModAction(btn) {
     const action = btn.dataset.action;
     if (action === 'del-msg') {
       armButton(btn, () => moderate({ message_id: parseInt(btn.dataset.id, 10) }));
     } else if (action === 'del-user') {
       armButton(btn, () => moderate({ target_user_id: parseInt(btn.dataset.uid, 10) }));
     }
+  }
+
+  $messages.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (btn) handleModAction(btn);
+  });
+
+  $messages.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    e.preventDefault();
+    handleModAction(btn);
   });
 
   // ── Init ──────────────────────────────────────────────────────────────────

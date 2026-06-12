@@ -155,7 +155,7 @@ html, body {
 .msg:hover .msg-actions,
 .msg:focus-within .msg-actions { display: flex; }
 
-.msg-actions button {
+.msg-actions [role="button"] {
   font-size: 11px;
   font-weight: 600;
   color: #dc2626;
@@ -172,8 +172,9 @@ html, body {
   user-select: none;
 }
 
-.msg-actions button:hover,
-.msg-actions button:active {
+.msg-actions [role="button"]:hover,
+.msg-actions [role="button"]:active,
+.msg-actions [role="button"]:focus-visible {
   background: rgba(220, 38, 38, 0.14);
   border-color: rgba(220, 38, 38, 0.4);
 }
@@ -266,7 +267,7 @@ html, body {
   flex-shrink: 0;
 }
 
-.msg-actions button[data-confirming] {
+.msg-actions [role="button"][data-confirming] {
   background: #dc2626;
   color: #fff;
   border-color: #dc2626;
