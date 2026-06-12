@@ -131,6 +131,21 @@ final class TokenValidatorTest extends TestCase
         return [['jti'], ['sub'], ['site']];
     }
 
+    // ── Strict base64 ────────────────────────────────────────────────────────
+
+    public function testInvalidBase64PayloadThrows(): void
+    {
+        // Construct a token with invalid base64 in the payload but a valid signature
+        // (so the signature check passes and we reach the payload decode step).
+        $header         = $this->b64url(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+        $invalidPayload = 'not!!!valid!!base64'; // !! chars are outside base64url alphabet
+        $sig            = $this->b64url(hash_hmac('sha256', "$header.$invalidPayload", self::SECRET, true));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Invalid token payload');
+        $this->validator->validate("$header.$invalidPayload.$sig", $this->siteConfig());
+    }
+
     // ── Site binding ──────────────────────────────────────────────────────────
 
     public function testWrongSiteThrows(): void

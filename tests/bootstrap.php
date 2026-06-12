@@ -18,5 +18,7 @@ require_once BASE_DIR . '/src/Security/Headers.php';
 require_once BASE_DIR . '/src/Security/CsrfGuard.php';
 require_once BASE_DIR . '/src/Security/RateLimiter.php';
 require_once BASE_DIR . '/src/Auth/TokenValidator.php';
+require_once BASE_DIR . '/src/Auth/Session.php';
 require_once BASE_DIR . '/src/Chat/MessageRepository.php';
 require_once BASE_DIR . '/src/Chat/UserRepository.php';
+require_once BASE_DIR . '/sdk/ChatEmbed.php';
