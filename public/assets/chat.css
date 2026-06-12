@@ -12,6 +12,7 @@
 
 html, body {
   height: 100%;
+  overflow: hidden; /* prevent iframe body from showing its own scrollbars */
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 14px;
   background: var(--bg);
@@ -20,16 +21,26 @@ html, body {
 #chat {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  max-height: 100vh;
+  height: 100%; /* fill the iframe — avoids 100vh mobile browser-chrome issues */
   background: var(--bg);
+}
+
+/* ── Notice (session expired / connection error) ─────────────────────────── */
+
+.chat-notice {
+  padding: 12px;
+  color: var(--meta);
+  font-size: 13px;
+  text-align: center;
 }
 
 /* ── Message list ────────────────────────────────────────────────────────── */
 
 #chat-messages {
   flex: 1;
+  min-height: 0; /* required: allows flex item with overflow-y to shrink below content size */
   overflow-y: auto;
+  overscroll-behavior: contain; /* prevents scroll from leaking to the host page */
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -155,10 +166,10 @@ html, body {
   padding: 3px 9px;
   line-height: 1.5;
   transition: background 0.15s, border-color 0.15s;
-  /* minimum tap target for touch */
-  min-height: 28px;
+  min-height: 28px; /* minimum tap target for touch */
   display: inline-flex;
   align-items: center;
+  user-select: none;
 }
 
 .msg-actions button:hover,
@@ -190,6 +201,7 @@ html, body {
   background: var(--bg);
   color: var(--msg-fg);
   line-height: 1.4;
+  -webkit-appearance: none; /* remove iOS default input styling */
 }
 
 #chat-input:focus { border-color: var(--primary); }
@@ -205,6 +217,8 @@ html, body {
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
+  -webkit-appearance: none;
+  user-select: none;
 }
 
 #chat-send:disabled {

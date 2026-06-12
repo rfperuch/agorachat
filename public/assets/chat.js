@@ -120,6 +120,14 @@
 
   // ── API calls ─────────────────────────────────────────────────────────────
 
+  function showExpired() {
+    $messages.innerHTML = `<p class="chat-notice">${escHtml(s.sessionExpired)}</p>`;
+  }
+
+  function showError() {
+    $messages.innerHTML = `<p class="chat-notice">${escHtml(s.errorConnection)}</p>`;
+  }
+
   async function loadHistory() {
     try {
       const res = await fetch(`${BASE}/history.php`, {
@@ -127,10 +135,7 @@
         headers: { 'X-Session-Token': cfg.sessionToken },
       });
 
-      if (res.status === 401) {
-        $messages.innerHTML = `<p style="padding:12px;color:#888">${escHtml(s.sessionExpired)}</p>`;
-        return false; // signal to caller: don't start polling
-      }
+      if (res.status === 401) { showExpired(); return false; }
 
       const data = await res.json();
       if (data.messages) {
@@ -138,7 +143,8 @@
         scrollBottom();
       }
     } catch (e) {
-      console.error('History load failed', e);
+      showError();
+      return false; // don't start polling on initial connection failure
     }
     return true;
   }
@@ -151,10 +157,7 @@
         headers: { 'X-Session-Token': cfg.sessionToken },
       });
 
-      if (res.status === 401) {
-        $messages.innerHTML = `<p style="padding:12px;color:#888">${escHtml(s.sessionExpired)}</p>`;
-        return; // pollTimer not rescheduled — loop stops
-      }
+      if (res.status === 401) { showExpired(); return; } // loop stops — no reschedule
 
       const data = await res.json();
 
@@ -175,10 +178,12 @@
   }
 
   async function sendMessage() {
+    if ($send.disabled) return; // prevent double-send via keyboard during in-flight request or cooldown
     const content = $input.value.trim();
     if (!content) return;
 
     $send.disabled = true;
+    let keepDisabled = false; // true when a cooldown takes over button ownership
     try {
       const res  = await fetch(`${BASE}/send.php`, {
         method:      'POST',
@@ -189,14 +194,17 @@
       const data = await res.json();
 
       if (res.status === 403 && data.error?.includes('CSRF')) { // stale session
-        window.location.reload(); // stale session — reload to get fresh CSRF token
+        window.location.reload();
         return;
       }
 
       if (res.status === 429 && data.wait) {
+        keepDisabled = true; // startCooldown owns the button — don't re-enable in finally
         startCooldown(data.wait);
         return;
       }
+
+      if (res.status === 401) { showExpired(); return; }
 
       if (res.ok) {
         $input.value = '';
@@ -206,7 +214,7 @@
     } catch (e) {
       alert(s.errorConnection);
     } finally {
-      $send.disabled = false;
+      if (!keepDisabled) $send.disabled = false;
     }
   }
 
