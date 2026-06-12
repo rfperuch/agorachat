@@ -11,7 +11,7 @@ Embeddable public chat widget for PHP applications. Each tenant gets a shared pu
 - **Iframe embed** — one call to `iframeTag()`, fully sandboxed from the host page
 - **Cross-site sessions** — works in Safari and Chrome with third-party cookie blocking via `X-Session-Token` header
 - **Per-embed customisation** — height, width and theme colors are set independently on each `iframeTag()` call
-- **Moderation** — superusers can delete individual messages or clear all messages from a user in real time
+- **Moderation** — superusers can delete individual messages or clear all messages from a user; actions require a two-click confirmation (first click arms the button, second executes)
 - **i18n** — all UI strings are overrideable per tenant; ships with Portuguese defaults
 - **No extra infrastructure** — MySQL only; sessions, rate limiting, and cleanup all run in the same database
 
@@ -50,7 +50,6 @@ Edit `config/database.php` with your credentials, then open `config/sites.php` a
     'message_ttl'        => 86400,
     'max_message_length' => 200,
     'history_limit'      => 50,
-    'widget_height'      => 500,
 ],
 ```
 
@@ -72,17 +71,16 @@ echo $chat->iframeTag(
 Height and width are configured per `iframeTag()` call — each embed on the page can have a different size.
 
 **Priority (highest to lowest):**
-1. `height` parameter in `iframeTag()` — explicit client override
-2. `widget_height` in `config/sites.php` — server-side default for the tenant
-3. Built-in fallback: `500px`
+1. `height` parameter in `iframeTag()` — explicit value
+2. Built-in fallback: `500px`
 
-The widget reports its resolved height to the parent page via `postMessage`, so the iframe always resizes to the correct value even when the server default is used.
+The widget reports its height to the parent page via `postMessage`, so the iframe always resizes to the correct value after load.
 
 ```php
-// Uses widget_height from config/sites.php (server default)
+// Uses built-in default (500px)
 echo $chat->iframeTag(user: $user, chatUrl: $url);
 
-// Client override — ignores server default
+// Explicit height
 echo $chat->iframeTag(user: $user, chatUrl: $url, height: 700);
 
 // Compact sidebar widget
@@ -91,33 +89,12 @@ echo $chat->iframeTag(user: $user, chatUrl: $url, height: 400, width: '320px');
 
 ## Customizing the appearance
 
-Theme colors can be set at two levels:
-
-**Server default** — applies to all embeds of this tenant unless overridden:
-
-```php
-// config/sites.php
-'my_site' => [
-    'theme' => [
-        'primary'    => '#0ea5e9',
-        'primary_fg' => '#ffffff',
-        'bg'         => '#0f172a',
-        'msg_bg'     => '#1e293b',
-        'msg_fg'     => '#e2e8f0',
-        'meta'       => '#64748b',
-        'border'     => '#334155',
-    ],
-],
-```
-
-**Per-embed override** — passed in `iframeTag()`, takes precedence over the server config. Useful when the same tenant appears in multiple locations with different styles:
+Theme colors are set per `iframeTag()` call. Keys not provided fall back to the built-in defaults:
 
 ```php
 echo $chat->iframeTag(user: $user, chatUrl: $url, theme: ['primary' => '#e11d48']);
 echo $chat->iframeTag(user: $user, chatUrl: $url, theme: ['bg' => '#0f172a', 'primary' => '#7c3aed']);
 ```
-
-Keys not provided fall back to `config/sites.php`, then to the built-in defaults:
 
 | Key | Default | Role |
 |---|---|---|
@@ -129,7 +106,7 @@ Keys not provided fall back to `config/sites.php`, then to the built-in defaults
 | `meta` | `#888888` | Sender names, timestamps, and cooldown text |
 | `border` | `#e5e7eb` | Footer and input borders |
 
-> **Live preview** — see [Development preview](#development-preview) for setup instructions, then open `examples/test_embed.php` in a browser to pick colors interactively before committing them to config.
+> **Live preview** — see [Development preview](#development-preview) for setup instructions, then open `examples/test_embed.php` in a browser to pick colors interactively before passing them to `iframeTag()`.
 
 ## Translating the widget
 
@@ -146,15 +123,14 @@ All user-facing strings are defined in `config/sites.php` under the `strings` ke
         'errorSend'        => 'Failed to send message.',
         'errorModerate'    => 'Moderation action failed.',
         'errorConnection'  => 'Connection error.',
-        'confirmDelete'    => 'Delete this message?',
-        'confirmDeleteAll' => 'Delete ALL messages from this user?',
+        'confirm'          => 'Confirm?',
         'deleteMsg'        => 'Delete',
         'deleteUser'       => 'Delete all from user',
     ],
 ],
 ```
 
-The `lang` value is set as the `<html lang>` attribute of the widget iframe. The `{n}` placeholder in `cooldown` is replaced at runtime with the remaining seconds.
+The `lang` value is set as the `<html lang>` attribute of the widget iframe. The `{n}` placeholder in `cooldown` is replaced at runtime with the remaining seconds. The `confirm` value is the label shown on moderation buttons after the first click (two-step confirmation).
 
 ## Scheduled cleanup
 
@@ -175,7 +151,7 @@ The test suite is pure unit tests — no database required.
 
 ## Development preview
 
-`examples/test_embed.php` simulates a host site embedding the widget. Open it in a browser to switch between test users, verify authentication, and pick theme colors interactively before committing them to config.
+`examples/test_embed.php` simulates a host site embedding the widget. Open it in a browser to switch between test users, verify authentication, and pick theme colors interactively before passing them to `iframeTag()`.
 
 Configure the three constants at the top of the file:
 
@@ -222,8 +198,6 @@ Leave `CHAT_URL` as an empty string (`''`) to auto-detect the URL from the curre
 | `message_ttl` | `0` | Seconds after which messages are deleted. `0` keeps them forever. |
 | `max_message_length` | `200` | Maximum characters per message. |
 | `history_limit` | `50` | Number of messages loaded when the widget opens. |
-| `widget_height` | `500` | Default iframe height in pixels. Overrideable per embed via the `height` parameter in `iframeTag()`. Clamped to 100–2000. |
-| `theme` | see above | Hex color overrides for the widget. |
 | `strings` | see above | UI string overrides for translation. |
 
 ## License

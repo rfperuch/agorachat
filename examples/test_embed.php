@@ -168,7 +168,7 @@ $theme = [
         <button type="submit" class="apply-btn">Aplicar</button>
       </form>
       <a href="?user=<?= $userId ?>" class="reset-link">Resetar para padrão</a>
-      <p class="hint" style="margin-top:8px;">Preview apenas. Para persistir, edite <code>config/sites.php</code>.</p>
+      <p class="hint" style="margin-top:8px;">Para usar estas cores, passe-as via <code>theme: [...]</code> no <code>iframeTag()</code>.</p>
     </div>
 
   </div>

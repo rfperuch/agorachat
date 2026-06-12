@@ -40,11 +40,12 @@ class MySqlSessionHandler implements SessionHandlerInterface
 
     public function write(string $id, string $data): bool
     {
+        $now = time();
         $this->db->prepare(
             'INSERT INTO php_sessions (session_id, data, last_active)
              VALUES (?, ?, ?)
-             ON DUPLICATE KEY UPDATE data = VALUES(data), last_active = VALUES(last_active)'
-        )->execute([$id, $data, time()]);
+             ON DUPLICATE KEY UPDATE data = ?, last_active = ?'
+        )->execute([$id, $data, $now, $data, $now]);
         return true;
     }
 

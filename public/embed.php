@@ -107,15 +107,14 @@ function buildStrings(array $cfg): array
         'errorSend'        => 'Erro ao enviar mensagem.',
         'errorModerate'    => 'Erro ao moderar.',
         'errorConnection'  => 'Falha de conexão.',
-        'confirmDelete'    => 'Apagar esta mensagem?',
-        'confirmDeleteAll' => 'Apagar TODAS as mensagens deste usuário?',
+        'confirm'          => 'Confirmar?',
         'deleteMsg'        => 'Apagar',
         'deleteUser'       => 'Apagar tudo do usuário',
     ];
     return array_merge($defaults, $cfg['strings'] ?? []);
 }
 
-function buildTheme(array $cfg): array
+function buildTheme(): array
 {
     $defaults = [
         'primary'    => '#4f46e5',
@@ -128,8 +127,7 @@ function buildTheme(array $cfg): array
     ];
     $out = [];
     foreach ($defaults as $key => $default) {
-        // URL param overrides config (used by test_embed for live preview)
-        $val = $_GET[$key] ?? $cfg[$key] ?? $default;
+        $val = $_GET[$key] ?? $default;
         $out[$key] = preg_match('/^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$/', (string) $val)
             ? $val
             : $default;
@@ -142,10 +140,9 @@ function renderChat(string $siteId, array $cfg, string $csrfToken, string $sessi
     $historyLimit = (int) ($cfg['history_limit'] ?? 50);
     $cooldown     = (int) ($cfg['message_cooldown'] ?? 0);
     $maxLen       = (int) ($cfg['max_message_length'] ?? 200);
-    // SDK can override widget_height via ?h=N; sites.php value is the fallback.
-    // Clamped to [100, 2000] to prevent absurd iframe dimensions.
-    $widgetHeight = min(2000, max(100, (int) ($_GET['h'] ?? $cfg['widget_height'] ?? 500)));
-    $theme        = buildTheme($cfg['theme'] ?? []);  // merges config + URL overrides
+    // Height is set exclusively by the SDK via ?h=N; clamped to [100, 2000].
+    $widgetHeight = min(2000, max(100, (int) ($_GET['h'] ?? 500)));
+    $theme        = buildTheme();
     $strings      = buildStrings($cfg);
     $lang         = htmlspecialchars($strings['lang'], ENT_QUOTES);
 ?>

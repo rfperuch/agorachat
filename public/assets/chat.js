@@ -17,11 +17,20 @@
   let lastDeletionId = 0;
   let pollTimer      = null; // setTimeout handle — null means polling stopped
   let cooldownTimer  = null;
+  let errorTimer     = null;
+  let confirmingBtn  = null;
 
   const $messages  = document.getElementById('chat-messages');
   const $input     = document.getElementById('chat-input');
   const $send      = document.getElementById('chat-send');
   const $cooldown  = document.getElementById('chat-cooldown');
+  const $error     = (() => {
+    const el = document.createElement('div');
+    el.id = 'chat-error';
+    el.hidden = true;
+    document.getElementById('chat-footer').before(el);
+    return el;
+  })();
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -45,11 +54,46 @@
   }
 
   function scrollBottom() {
-    $messages.scrollTop = $messages.scrollHeight;
+    requestAnimationFrame(() => {
+      $messages.scrollTop = $messages.scrollHeight;
+    });
   }
 
   function isNearBottom() {
     return $messages.scrollHeight - $messages.scrollTop - $messages.clientHeight < 80;
+  }
+
+  function showInlineError(msg) {
+    $error.textContent = msg;
+    $error.hidden = false;
+    clearTimeout(errorTimer);
+    errorTimer = setTimeout(() => { $error.hidden = true; }, 3500);
+  }
+
+  function armButton(btn, action) {
+    if (confirmingBtn && confirmingBtn !== btn) {
+      clearTimeout(confirmingBtn._timer);
+      confirmingBtn.textContent = confirmingBtn._orig;
+      delete confirmingBtn.dataset.confirming;
+      confirmingBtn = null;
+    }
+    if (btn.dataset.confirming) {
+      clearTimeout(btn._timer);
+      btn.textContent = btn._orig;
+      delete btn.dataset.confirming;
+      confirmingBtn = null;
+      action();
+    } else {
+      btn._orig = btn.textContent;
+      btn.dataset.confirming = '1';
+      btn.textContent = s.confirm;
+      confirmingBtn = btn;
+      btn._timer = setTimeout(() => {
+        btn.textContent = btn._orig;
+        delete btn.dataset.confirming;
+        if (confirmingBtn === btn) confirmingBtn = null;
+      }, 3000);
+    }
   }
 
   const AVATAR_COLORS = [
@@ -140,7 +184,6 @@
       const data = await res.json();
       if (data.messages) {
         appendMessages(data.messages);
-        scrollBottom();
       }
     } catch (e) {
       showError();
@@ -209,10 +252,10 @@
       if (res.ok) {
         $input.value = '';
       } else {
-        alert(data.error ?? s.errorSend);
+        showInlineError(data.error ?? s.errorSend);
       }
     } catch (e) {
-      alert(s.errorConnection);
+      showInlineError(s.errorConnection);
     } finally {
       if (!keepDisabled) $send.disabled = false;
     }
@@ -229,9 +272,9 @@
         body:        JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) alert(data.error ?? s.errorModerate);
+      if (!res.ok) showInlineError(data.error ?? s.errorModerate);
     } catch (e) {
-      alert(s.errorConnection);
+      showInlineError(s.errorConnection);
     }
   }
 
@@ -271,13 +314,9 @@
     if (!btn) return;
     const action = btn.dataset.action;
     if (action === 'del-msg') {
-      if (confirm(s.confirmDelete)) {
-        moderate({ message_id: parseInt(btn.dataset.id, 10) });
-      }
+      armButton(btn, () => moderate({ message_id: parseInt(btn.dataset.id, 10) }));
     } else if (action === 'del-user') {
-      if (confirm(s.confirmDeleteAll)) {
-        moderate({ target_user_id: parseInt(btn.dataset.uid, 10) });
-      }
+      armButton(btn, () => moderate({ target_user_id: parseInt(btn.dataset.uid, 10) }));
     }
   });
 

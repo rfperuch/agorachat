@@ -9,17 +9,16 @@ declare(strict_types=1);
  * Usage:
  *   $chat = new ChatEmbed('my_site_id', 'my_shared_secret');
  *
- *   // Basic embed — height comes from config/sites.php (default 500)
+ *   // Basic embed — uses built-in default height of 500px
  *   echo $chat->iframeTag($user, 'https://chat.example.com/public/embed.php');
  *
- *   // Override height and theme per embed — each call is fully independent
+ *   // Set height and theme per embed — each call is fully independent
  *   echo $chat->iframeTag($user, $url, height: 400, theme: ['primary' => '#e11d48']);
  *   echo $chat->iframeTag($user, $url, height: 600, theme: ['bg' => '#0f172a', 'primary' => '#7c3aed']);
  *
  * Height resolution (highest priority first):
- *   1. $height parameter in this call  (client override)
- *   2. widget_height in config/sites.php on the server
- *   3. Built-in default: 500px
+ *   1. $height parameter in this call
+ *   2. Built-in default: 500px
  */
 class ChatEmbed
 {
@@ -34,14 +33,14 @@ class ChatEmbed
      * Generates the iframe HTML tag plus a postMessage listener script.
      *
      * The listener script resizes the iframe once the widget reports its
-     * configured height via postMessage — this is how server-side widget_height
-     * takes effect without a round-trip.
+     * height via postMessage, keeping the iframe attribute and the rendered
+     * widget in sync.
      *
      * @param array  $user    User data: user_id (required), display_name, avatar_url, is_super
      * @param string $chatUrl Full URL to embed.php on the AgoraChat server
-     * @param int    $height  Override iframe height in pixels. 0 = use server default (widget_height in sites.php)
+     * @param int    $height  Iframe height in pixels. 0 = use built-in default (500px)
      * @param string $width   Iframe width — any CSS value (default '100%')
-     * @param array  $theme   Per-embed theme overrides. Keys: primary, primary_fg,
+     * @param array  $theme   Theme overrides. Keys: primary, primary_fg,
      *                        bg, msg_bg, msg_fg, meta, border. All hex colors.
      * @param array  $attrs   Any additional HTML attributes for the <iframe> tag
      */
@@ -55,13 +54,12 @@ class ChatEmbed
     ): string {
         $params = ['site' => $this->siteId, 'token' => $this->generateToken($user)];
 
-        // Client height override is passed as ?h=N so the server can resolve the
-        // final value and include it in the widget config for postMessage.
+        // Height is forwarded as ?h=N and echoed back in the widget config for postMessage.
         if ($height > 0) {
             $params['h'] = $height;
         }
 
-        // Theme overrides are merged server-side in buildTheme().
+        // Theme overrides are forwarded as URL params and applied server-side.
         foreach (['primary', 'primary_fg', 'bg', 'msg_bg', 'msg_fg', 'meta', 'border'] as $key) {
             if (isset($theme[$key])) {
                 $params[$key] = $theme[$key];

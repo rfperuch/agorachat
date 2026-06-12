@@ -254,6 +254,24 @@ html, body {
   .msg-actions { display: flex; }
 }
 
+/* ── Inline error banner ─────────────────────────────────────────────────── */
+
+#chat-error {
+  padding: 7px 12px;
+  font-size: 12px;
+  color: #b91c1c;
+  background: rgba(185, 28, 28, 0.07);
+  border-top: 1px solid rgba(185, 28, 28, 0.15);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.msg-actions button[data-confirming] {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
 /* ── Animation ───────────────────────────────────────────────────────────── */
 
 @keyframes fadeIn {

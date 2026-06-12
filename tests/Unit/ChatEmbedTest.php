@@ -52,7 +52,7 @@ final class ChatEmbedTest extends TestCase
     public function testDefaultHeightIsNotPassedAsUrlParam(): void
     {
         $out = $this->chat->iframeTag($this->user, $this->url);
-        // When height=0 (use server default), ?h= must NOT appear in the URL
+        // When height=0 (use built-in default), ?h= must NOT appear in the URL
         $this->assertStringNotContainsString('&amp;h=', $out);
         $this->assertDoesNotMatchRegularExpression('/[?&]h=/', parse_url($out, PHP_URL_QUERY) ?? '');
     }
